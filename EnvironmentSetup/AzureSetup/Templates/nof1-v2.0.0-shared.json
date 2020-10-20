@@ -1,0 +1,259 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "2.0.0.0",
+    "parameters": {
+        "customerIdentifier": {
+            "type": "string",
+            "maxLength": 20,
+            "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+        },
+        "environment": {
+            "type": "string",
+            "maxLength": 5,
+            "metadata": { "description": "The name of the environment." }
+        },
+        "environmentNumber": {
+            "type": "int",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "portalVmAdminPassword": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlElasticPoolName": {
+            "type": "string",
+            "defaultValue": "[concat(parameters('customerIdentifier'), '-sql-pool')]"
+        },
+        "sqlServerAdminPassword": {
+            "type": "securestring"
+        },
+        "sqlServerName": {
+            "type": "string",
+            "defaultValue": "[concat('nof1health-', parameters('customerIdentifier'), '-sql')]"
+        },
+        "sqlServerActiveDirectoryAdmin": {
+            "type": "string",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordNof1": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordDnn": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordDataWarehouse": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordLog": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        }
+    },
+    "variables": {
+        "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+        "sqlDatabaseNameNof1": "[replace(variables('customerEnvironment'), '{TOKEN}', 'nof1')]",
+        "sqlDatabaseNameNof1_TestMode": "[replace(variables('customerEnvironment'), '{TOKEN}', 'nof1_test')]",
+        "sqlDatabaseNameDnn": "[replace(variables('customerEnvironment'), '{TOKEN}', 'dnn')]",
+        "sqlDatabaseNameDataWarehouse": "[replace(variables('customerEnvironment'), '{TOKEN}', 'dw')]",
+        "sqlDatabaseNameDataWarehouse_TestMode": "[replace(variables('customerEnvironment'), '{TOKEN}', 'dw_test')]",
+        "sqlDatabaseNameLog": "[replace(variables('customerEnvironment'), '{TOKEN}', 'log')]",
+        "sqlDatabaseNameLog_TestMode": "[replace(variables('customerEnvironment'), '{TOKEN}', 'log_test')]",
+        "schedulerName": "[concat(parameters('customerIdentifier'), '-jobs')]"
+    },
+    "resources": [
+        {
+            "name": "[parameters('sqlServerName')]",
+            "type": "Microsoft.Sql/servers",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2014-04-01-preview",
+            "properties": {
+                "administratorLogin": "[parameters('sqlServerName')]",
+                "administratorLoginPassword": "[parameters('sqlServerAdminPassword')]",
+                "version": "12.0"
+            },
+            "resources": [
+                {
+                    "name": "AllowAllWindowsAzureIps",
+                    "type": "firewallrules",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
+                    ],
+                    "properties": {
+                        "startIpAddress": "0.0.0.0",
+                        "endIpAddress": "0.0.0.0"
+                    }
+                },
+                {
+                    "name": "[parameters('sqlElasticPoolName')]",
+                    "type": "elasticPools",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "dtu": "100"
+                    }
+                },
+                {
+                    "name": "[variables('sqlDatabaseNameNof1')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/elasticPools/', parameters('sqlElasticPoolName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "serviceLevelObjective": "ElasticPool",
+                        "elasticPoolName": "[parameters('sqlElasticPoolName')]"
+                    }
+                },
+                {
+                    "name": "[variables('sqlDatabaseNameNof1_TestMode')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/elasticPools/', parameters('sqlElasticPoolName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "serviceLevelObjective": "ElasticPool",
+                        "elasticPoolName": "[parameters('sqlElasticPoolName')]"
+                    },
+                    "tags": {
+                        "test-mode": "test-mode"
+                    }
+                },
+                {
+                    "name": "[variables('sqlDatabaseNameDnn')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/elasticPools/', parameters('sqlElasticPoolName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "serviceLevelObjective": "ElasticPool",
+                        "elasticPoolName": "[parameters('sqlElasticPoolName')]"
+                    }
+                },
+                {
+                    "name": "[variables('sqlDatabaseNameDataWarehouse')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/elasticPools/', parameters('sqlElasticPoolName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "serviceLevelObjective": "ElasticPool",
+                        "elasticPoolName": "[parameters('sqlElasticPoolName')]"
+                    }
+                },
+                {
+                    "name": "[variables('sqlDatabaseNameDataWarehouse_TestMode')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/elasticPools/', parameters('sqlElasticPoolName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "serviceLevelObjective": "ElasticPool",
+                        "elasticPoolName": "[parameters('sqlElasticPoolName')]"
+                    },
+                    "tags": {
+                        "test-mode": "test-mode"
+                    }
+                },
+                {
+                    "name": "[variables('sqlDatabaseNameLog')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/elasticPools/', parameters('sqlElasticPoolName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "serviceLevelObjective": "ElasticPool",
+                        "elasticPoolName": "[parameters('sqlElasticPoolName')]"
+                    }
+                },
+                {
+                    "name": "[variables('sqlDatabaseNameLog_TestMode')]",
+                    "type": "databases",
+                    "location": "[resourceGroup().location]",
+                    "apiVersion": "2014-04-01-preview",
+                    "dependsOn": [
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'))]",
+                        "[concat('Microsoft.Sql/servers/', parameters('sqlServerName'), '/elasticPools/', parameters('sqlElasticPoolName'))]"
+                    ],
+                    "properties": {
+                        "edition": "Standard",
+                        "serviceLevelObjective": "ElasticPool",
+                        "elasticPoolName": "[parameters('sqlElasticPoolName')]"
+                    },
+                    "tags": {
+                        "test-mode": "test-mode"
+                    }
+                }
+            ]
+        }
+    ],
+    "outputs": {
+        "customerIdentifier": {
+            "type": "string",
+            "value": "[parameters('customerIdentifier')]"
+        },
+        "sqlServerName": {
+            "type": "string",
+            "value": "[parameters('sqlServerName')]"
+        },
+        "sqlDatabaseNameNof1": {
+            "type": "string",
+            "value": "[variables('sqlDatabaseNameNof1')]"
+        },
+        "sqlDatabaseNameNof1_TestMode": {
+            "type": "string",
+            "value": "[variables('sqlDatabaseNameNof1_TestMode')]"
+        },
+        "sqlDatabaseNameDnn": {
+            "type": "string",
+            "value": "[variables('sqlDatabaseNameDnn')]"
+        },
+        "sqlDatabaseNameDataWarehouse": {
+            "type": "string",
+            "value": "[variables('sqlDatabaseNameDataWarehouse')]"
+        },
+        "sqlDatabaseNameDataWarehouse_TestMode": {
+            "type": "string",
+            "value": "[variables('sqlDatabaseNameDataWarehouse_TestMode')]"
+        },
+        "sqlDatabaseNameLog": {
+            "type": "string",
+            "value": "[variables('sqlDatabaseNameLog')]"
+        },
+        "sqlDatabaseNameLog_TestMode": {
+            "type": "string",
+            "value": "[variables('sqlDatabaseNameLog_TestMode')]"
+        }
+    }
+}

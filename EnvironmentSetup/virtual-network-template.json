@@ -1,0 +1,128 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },
+    "networkSecurityGroupRules": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "name": "HTTP",
+          "properties": {
+            "priority": 300,
+            "protocol": "TCP",
+            "access": "Allow",
+            "direction": "Inbound",
+            "sourceAddressPrefix": "*",
+            "sourcePortRange": "*",
+            "destinationAddressPrefix": "*",
+            "destinationPortRange": "80"
+          }
+        },
+        {
+          "name": "HTTPS",
+          "properties": {
+            "priority": 320,
+            "protocol": "TCP",
+            "access": "Allow",
+            "direction": "Inbound",
+            "sourceAddressPrefix": "*",
+            "sourcePortRange": "*",
+            "destinationAddressPrefix": "*",
+            "destinationPortRange": "443"
+          }
+        },
+        {
+          "name": "SSH",
+          "properties": {
+            "priority": 340,
+            "protocol": "TCP",
+            "access": "Allow",
+            "direction": "Inbound",
+            "sourceAddressPrefix": "*",
+            "sourcePortRange": "*",
+            "destinationAddressPrefix": "*",
+            "destinationPortRange": "22"
+          }
+        },
+        {
+          "name": "RDP",
+          "properties": {
+            "priority": 360,
+            "protocol": "TCP",
+            "access": "Allow",
+            "direction": "Inbound",
+            "sourceAddressPrefix": "*",
+            "sourcePortRange": "*",
+            "destinationAddressPrefix": "*",
+            "destinationPortRange": "3389"
+          }
+        }
+      ]
+    },
+    "virtualNetworkAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.2.0/24"
+    },
+    "virtualNetworkSubnetPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.2.0/24"
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "virtualNetworkName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network')]",
+    "virtualNetworkSubnetName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network-subnet')]",
+    "networkSecurityGroupName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network-security-group')]"
+  },
+  "resources": [
+    {
+      "comments": "Virtual Network - used to host the portal VM (among other possible uses).",
+      "name": "[variables('virtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2018-08-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('virtualNetworkAddressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('virtualNetworkSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('virtualNetworkSubnetPrefix')]"
+            }
+          }
+        ]
+      },
+      "tags": {}
+    },
+    {
+      "name": "[variables('networkSecurityGroupName')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2018-08-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "securityRules": "[parameters('networkSecurityGroupRules')]"
+      },
+      "tags": {}
+    }
+  ]
+}

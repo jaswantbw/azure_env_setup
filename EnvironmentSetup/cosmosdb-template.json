@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "cosmosDbAccountName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'cosmosdb')]"
+  },
+  "resources": [
+    {
+      "comments": "CosmosDB Account",
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "kind": "GlobalDocumentDB",
+      "name": "[variables('cosmosDbAccountName')]",
+      "apiVersion": "2015-04-08",
+      "location": "[parameters('location')]",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "name": "[variables('cosmosDbAccountName')]"
+      },
+      "dependsOn": []
+    }
+  ],
+  "outputs": {
+    "cosmosDbAccountName": {
+      "type": "string",
+      "value": "[variables('cosmosDbAccountName')]"
+    },
+    "cosmosDbAccountKey": {
+      "type": "string",
+      "value": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbAccountName')), providers('Microsoft.DocumentDB', 'databaseAccounts').apiVersions[0]).primaryMasterKey]"
+    }
+  }
+
+}

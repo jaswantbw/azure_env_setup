@@ -1,0 +1,104 @@
+[
+    {
+      "additionalProperties": null,
+      "resourceAccess": [
+        {
+          "additionalProperties": null,
+          "id": "a42657d6-7f20-40e3-b6f0-cee03008a62a",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "5778995a-e1bf-45b8-affa-663a9f3f4d04",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "78c8a3c8-a07e-4b9e-af1b-b5ccab50a175",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "6234d376-f627-4f0f-90e0-dff25c5211a3",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "970d6fa6-214a-4a9b-8513-08fad511e2fd",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "2d05a661-f651-4d57-a595-489c91eda336",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "311a71cc-e848-46a1-bdf8-97ff7156d8e6",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "c582532d-9d9e-43bd-a97c-2667a28ce295",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "cba73afc-7f69-4d86-8450-4978e04ecd1a",
+          "type": "Scope"
+        },
+        {
+          "additionalProperties": null,
+          "id": "1cda74f2-2616-4834-b122-5cb1b07f8a59",
+          "type": "Role"
+        },
+        {
+          "additionalProperties": null,
+          "id": "824c81eb-e3f8-4ee6-8f6d-de7f50d565b7",
+          "type": "Role"
+        },
+        {
+          "additionalProperties": null,
+          "id": "1138cb37-bd11-4084-a2b7-9f71582aeddb",
+          "type": "Role"
+        },
+        {
+          "additionalProperties": null,
+          "id": "5778995a-e1bf-45b8-affa-663a9f3f4d04",
+          "type": "Role"
+        },
+        {
+          "additionalProperties": null,
+          "id": "78c8a3c8-a07e-4b9e-af1b-b5ccab50a175",
+          "type": "Role"
+        },
+        {
+          "additionalProperties": null,
+          "id": "aaff0dfd-0295-48b6-a5cc-9f465bc87928",
+          "type": "Role"
+        },
+        {
+          "additionalProperties": null,
+          "id": "abefe9df-d5a9-41c6-a60b-27b38eac3efb",
+          "type": "Role"
+        },
+        {
+          "additionalProperties": null,
+          "id": "9728c0c4-a06b-4e0e-8d1b-3d694e8ec207",
+          "type": "Role"
+        }
+      ],
+      "resourceAppId": "00000002-0000-0000-c000-000000000000"
+    },
+    {
+      "additionalProperties": null,
+      "resourceAccess": [
+        {
+          "additionalProperties": null,
+          "id": "e1fe6dd8-ba31-4d61-89e7-88639da4683d",
+          "type": "Scope"
+        }
+      ],
+      "resourceAppId": "00000003-0000-0000-c000-000000000000"
+    }
+  ]

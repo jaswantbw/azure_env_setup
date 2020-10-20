@@ -1,0 +1,14 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "2.0.0.0",
+  "parameters": {
+    "customerIdentifier": { "value": "nof1-dep" },
+    "environment": { "value": "test" },
+    "vmLocation": { "value": "East US 2" },
+    "portalVmAdminPassword": { "value": "ZcNvHG6bqdgSnGWJgh0P" },
+    "sqlElasticPoolName": { "value": "nof1-dp-sql-pool" },
+    "sqlServerName": { "value": "nof1health-nof1-dp-sql" },
+    "deletedDBName": { "value": "nof1-dp-nof1-test" },
+    "newVmName": { "value": "re" }
+  }
+}

@@ -1,0 +1,5 @@
+# Ignore environment deployment files, so they aren't accidentally committed.
+
+*-parameters.json
+*.cer
+*.yaml

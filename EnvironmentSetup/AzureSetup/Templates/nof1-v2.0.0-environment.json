@@ -1,0 +1,546 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "2.0.0.0",
+    "parameters": {
+        "customerIdentifier": {
+            "type": "string",
+            "maxLength": 20,
+            "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+        },
+        "customerIdentifierShort": {
+            "type": "string",
+            "defaultValue": "[replace(parameters('customerIdentifier'), '-', '')]",
+            "maxLength": 11,
+            "metadata": { "description": "A short version of customerIdentifier, for resources that require shorter names." }
+        },
+        "environment": {
+            "type": "string",
+            "maxLength": 4,
+            "metadata": { "description": "The name of the environment." }
+        },
+        "environmentNumber": {
+            "type": "int",
+            "metadata": { "description": "A unique number for this environment - used as part of the IP address." }
+        },
+        "portalVmAdminPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "Password for the Portal Virtual Machine."
+            }
+        },
+        "sqlElasticPoolName": {
+            "type": "string",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlServerAdminPassword": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlServerName": {
+            "type": "string",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlServerActiveDirectoryAdmin": {
+            "type": "string",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordNof1": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordDnn": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordDataWarehouse": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        },
+        "databasePasswordLog": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        }
+    },
+    "variables": {
+        "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+        "customerEnvironmentShort": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+        "domainName": "[concat(parameters('customerIdentifier'), '-', parameters('environment'))]",
+        "storageAccountName": "[replace(concat(parameters('customerIdentifierShort'), 'storage', parameters('environment')), '-', '')]",
+        "storageAccountName_TestMode": "[replace(concat(parameters('customerIdentifierShort'), 'storagetm', parameters('environment')), '-', '')]",
+        "premiumStorageAccountName": "[replace(concat(parameters('customerIdentifierShort'), 'storagepr', parameters('environment')), '-', '')]",
+        "publicIpName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'ip')]",
+        "virtualNetworkName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network')]",
+        "virtualNetworkId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+        "subnetName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'subnet')]",
+        "subnetId": "[concat(variables('virtualNetworkId'), '/subnets/', variables('subnetName'))]",
+        "ipAddressSpace": "[replace('192.168.{ENV}.0/24', '{ENV}', string(parameters('environmentNumber')))]",
+        "subnetIpAddressSpace": "[replace('192.168.{ENV}.0/26', '{ENV}', string(parameters('environmentNumber')))]",
+        "gatewaySubnetIpAddressSpace": "[replace('192.168.{ENV}.224/27', '{ENV}', string(parameters('environmentNumber')))]",
+        "loadBalancerName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'loadBalancer')]",
+        "loadBalancerId": "[resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName'))]",
+        "nicName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'nic')]",
+        "nicId": "[resourceId('Microsoft.Network/networkInterfaces', variables('nicName'))]",
+        "portalVmName": "[variables('domainName')]",
+        "portalVmId": "[resourceId('Microsoft.Network/virtualMachines', variables('portalVmName'))]",
+        "sqlServerName": "[concat(parameters('customerIdentifier'), '-sql')]",
+        "sqlElasticPoolName": "[concat(parameters('customerIdentifier'), '-sql-pool')]",
+        "sqlDatabaseNameNof1": "[replace(variables('customerEnvironment'), '{TOKEN}', 'nof1')]",
+        "sqlDatabaseNameDnn": "[replace(variables('customerEnvironment'), '{TOKEN}', 'dnn')]",
+        "appServicePlanName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'appserviceplan')]",
+        "apiAppName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'api')]",
+        "keyVaultName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'keyvault')]",
+        "keyVaultName_TestMode": "[replace(variables('customerEnvironment'), '{TOKEN}', 'keyvault-t')]",
+        "cacheName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'cache')]",
+        "cacheName_TestMode": "[replace(variables('customerEnvironment'), '{TOKEN}', 'cache-test')]",
+        "notificationHubNamespace": "[replace(variables('customerEnvironment'), '{TOKEN}', 'notificationspace')]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "accountType": "Standard_LRS"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName_TestMode')]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "accountType": "Standard_LRS"
+            },
+            "tags": {
+                "test-mode": "test-mode"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('premiumStorageAccountName')]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "accountType": "Premium_LRS"
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('publicIpName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic",
+                "dnsSettings": {
+                    "domainNameLabel": "[variables('domainName')]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('virtualNetworkName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('ipAddressSpace')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('subnetName')]",
+                        "properties": {
+                            "addressPrefix": "[variables('subnetIpAddressSpace')]"
+                        }
+                    },
+                    {
+                        "name": "GatewaySubnet",
+                        "properties": {
+                            "addressPrefix": "[variables('gatewaySubnetIpAddressSpace')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "name": "[variables('loadBalancerName')]",
+            "type": "Microsoft.Network/loadBalancers",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIpName'))]"
+            ],
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "frontend",
+                        "properties": {
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+                            }
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "backend"
+                    }
+                ],
+                "inboundNatRules": [
+                    {
+                        "name": "RemoteDesktop",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(variables('loadBalancerId'), '/frontendIPConfigurations/frontend')]"
+                            },
+                            "protocol": "tcp",
+                            "frontendPort": 33389,
+                            "backendPort": 3389,
+                            "enableFloatingIP": false
+                        }
+                    },
+                    {
+                        "name": "HTTP",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(variables('loadBalancerId'), '/frontendIPConfigurations/frontend')]"
+                            },
+                            "protocol": "tcp",
+                            "frontendPort": 80,
+                            "backendPort": 80,
+                            "enableFloatingIP": false
+                        }
+                    },
+                    {
+                        "name": "HTTPS",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(variables('loadBalancerId'), '/frontendIPConfigurations/frontend')]"
+                            },
+                            "protocol": "tcp",
+                            "frontendPort": 443,
+                            "backendPort": 443,
+                            "enableFloatingIP": false
+                        }
+                    },
+                    {
+                        "name": "SSH",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(variables('loadBalancerId'), '/frontendIPConfigurations/frontend')]"
+                            },
+                            "protocol": "tcp",
+                            "frontendPort": 22,
+                            "backendPort": 22,
+                            "enableFloatingIP": false
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[variables('nicName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+                "[concat('Microsoft.Network/loadBalancers/', variables('loadBalancerName'))]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipConfiguration",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[variables('subnetId')]"
+                            },
+                            "loadBalancerBackendAddressPools": [
+                                {
+                                    "id": "[concat(variables('loadBalancerId'), '/backendAddressPools/backend')]"
+                                }
+                            ],
+                            "loadBalancerInboundNatRules": [
+                                {
+                                    "id": "[concat(variables('loadBalancerId'),'/inboundNatRules/RemoteDesktop')]"
+                                },
+                                {
+                                    "id": "[concat(variables('loadBalancerId'),'/inboundNatRules/HTTP')]"
+                                },
+                                {
+                                    "id": "[concat(variables('loadBalancerId'),'/inboundNatRules/HTTPS')]"
+                                },
+                                {
+                                    "id": "[concat(variables('loadBalancerId'),'/inboundNatRules/SSH')]"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "2015-06-15",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[variables('portalVmName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('premiumStorageAccountName'))]",
+                "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_DS1"
+                },
+                "osProfile": {
+                    "computerName": "[variables('portalVmName')]",
+                    "adminUsername": "[variables('portalVmName')]",
+                    "adminPassword": "[parameters('portalVmAdminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "name": "osdisk",
+                        "vhd": {
+                            "uri": "[concat('http://', variables('premiumStorageAccountName'), '.blob.core.windows.net/vhds/', variables('portalVmName'),'-osdisk.vhd')]"
+                        },
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[variables('nicId')]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": "true",
+                        "storageUri": "[concat('http://', variables('storageAccountName'), '.blob.core.windows.net')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2015-08-01",
+            "name": "[variables('appServicePlanName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "name": "[variables('appServicePlanName')]"
+            },
+            "sku": {
+                "name": "B2",
+                "tier": "Basic",
+                "size": "B2",
+                "family": "B",
+                "capacity": 1
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2014-06-01",
+            "name": "[variables('apiAppName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+            ],
+            "kind": "api",
+            "properties": {
+                "name": "[variables('apiAppName')]",
+                "serverFarm": "[variables('appServicePlanName')]",
+                "kind": "api"
+            },
+            "resources": [
+                {
+                    "name": "web",
+                    "type": "config",
+                    "apiVersion": "2015-08-01",
+                    "properties": {
+                        "apiDefinition": {
+                            "url": "[concat('https://', reference(resourceId('Microsoft.Web/sites', variables('apiAppName'))).hostnames[0], '/swagger/docs/v1')]"
+                        },
+                        "cors": {
+                            "allowedOrigins": [ "*" ]
+                        }
+                    },
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', variables('apiAppName'))]"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "name": "[variables('keyVaultName')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-01",
+            "properties": {
+                "tenantId": "[subscription().tenantId]",
+                "accessPolicies": [
+                    {
+                        "objectId": "72468baa-2dcb-4c0d-b77e-c43a609d6ce9",
+                        "tenantId": "[subscription().tenantId]",
+                        "permissions": {
+                            "keys": [ "all" ],
+                            "secrets": [ "all" ]
+                        }
+                    },
+                    {
+                        "objectId": "c339c22e-7a9d-473e-98cd-c294dcc18cbc",
+                        "tenantId": "[subscription().tenantId]",
+                        "permissions": {
+                            "keys": [ "all" ],
+                            "secrets": [ "all" ]
+                        }
+                    }
+                ],
+                "sku": {
+                    "family": "A",
+                    "name": "standard"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.KeyVault/vaults",
+            "name": "[variables('keyVaultName_TestMode')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-06-01",
+            "properties": {
+                "tenantId": "[subscription().tenantId]",
+                "accessPolicies": [
+                    {
+                        "objectId": "72468baa-2dcb-4c0d-b77e-c43a609d6ce9",
+                        "tenantId": "[subscription().tenantId]",
+                        "permissions": {
+                            "keys": [ "all" ],
+                            "secrets": [ "all" ]
+                        }
+                    },
+                    {
+                        "objectId": "c339c22e-7a9d-473e-98cd-c294dcc18cbc",
+                        "tenantId": "[subscription().tenantId]",
+                        "permissions": {
+                            "keys": [ "all" ],
+                            "secrets": [ "all" ]
+                        }
+                    }
+                ],
+                "sku": {
+                    "family": "A",
+                    "name": "standard"
+                }
+            },
+            "tags": {
+                "test-mode": "test-mode"
+            }
+        },
+        {
+            "type": "Microsoft.Cache/Redis",
+            "name": "[variables('cacheName')]",
+            "apiVersion": "2016-04-01",
+            "location": "East US 2",
+            "tags": {},
+            "properties": {
+                "redisVersion": "3.2.7",
+                "sku": {
+                    "name": "Standard",
+                    "family": "C",
+                    "capacity": 0
+                },
+                "enableNonSslPort": true,
+                "redisConfiguration": {
+                    "maxclients": "256",
+                    "maxmemory-reserved": "2",
+                    "maxfragmentationmemory-reserved": "12",
+                    "maxmemory-delta": "2"
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Cache/Redis",
+            "name": "[variables('cacheName_TestMode')]",
+            "apiVersion": "2016-04-01",
+            "location": "East US 2",
+            "properties": {
+                "redisVersion": "3.2.7",
+                "sku": {
+                    "name": "Standard",
+                    "family": "C",
+                    "capacity": 0
+                },
+                "enableNonSslPort": true,
+                "redisConfiguration": {
+                    "maxclients": "256",
+                    "maxmemory-reserved": "2",
+                    "maxfragmentationmemory-reserved": "12",
+                    "maxmemory-delta": "2"
+                }
+            },
+            "dependsOn": [],
+            "tags": {
+                "test-mode": "test-mode"
+            }
+        },
+        {
+            "type": "Microsoft.NotificationHubs/namespaces",
+            "sku": {
+                "name": "Free"
+            },
+            "kind": "NotificationHub",
+            "name": "[variables('notificationHubNamespace')]",
+            "apiVersion": "2014-09-01",
+            "location": "East US",
+            "tags": {},
+            "scale": null,
+            "properties": {
+                "namespaceType": "NotificationHub"
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.NotificationHubs/namespaces/notificationHubs",
+            "name": "[concat(variables('notificationHubNamespace'), '/production')]",
+            "apiVersion": "2014-09-01",
+            "location": "East US",
+            "tags": {},
+            "scale": null,
+            "dependsOn": [
+                "[resourceId('Microsoft.NotificationHubs/namespaces', variables('notificationHubNamespace'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.NotificationHubs/namespaces/notificationHubs",
+            "name": "[concat(variables('notificationHubNamespace'), '/sandbox')]",
+            "apiVersion": "2014-09-01",
+            "location": "East US",
+            "tags": {},
+            "scale": null,
+            "dependsOn": [
+                "[resourceId('Microsoft.NotificationHubs/namespaces', variables('notificationHubNamespace'))]"
+            ]
+        }
+    ],
+    "outputs": {
+        "storageAccountName": {
+            "type": "string",
+            "value": "[variables('storageAccountName')]"
+        },
+        "portalVmName": {
+            "type": "string",
+            "value": "[variables('portalVmName')]"
+        }
+    }
+}

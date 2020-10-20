@@ -1,0 +1,85 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },
+    "activeDirectoryTenantId": {
+      "type": "string",
+      "maxLength": 36,
+      "minLength": 36,
+      "metadata": { "description": "A GUID contaning the Active Directory Tenant ID used to authenticate to the KeyVault." }
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "keyVaultName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'keyvault')]",
+    "keyVaultTestModeName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'keyvault-t')]"
+  },
+  "resources": [
+    {
+      "comments": "Primary KeyVault",
+      "type": "Microsoft.KeyVault/vaults",
+      "name": "[variables('keyVaultName')]",
+      "apiVersion": "2016-10-01",
+      "location": "[parameters('location')]",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "tenantId": "[parameters('activeDirectoryTenantId')]",
+        "accessPolicies": [],
+        "enabledForDeployment": true,
+        "enabledForDiskEncryption": true,
+        "enabledForTemplateDeployment": true
+      },
+      "dependsOn": []
+    },
+    {
+      "comments": "KeyVault - Test Mode",
+      "type": "Microsoft.KeyVault/vaults",
+      "name": "[variables('keyVaultTestModeName')]",
+      "apiVersion": "2016-10-01",
+      "location": "[parameters('location')]",
+      "tags": {
+        "test-mode": "test-mode"
+      },
+      "scale": null,
+      "properties": {
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "tenantId": "[parameters('activeDirectoryTenantId')]",
+        "accessPolicies": [],
+        "enabledForDeployment": true,
+        "enabledForDiskEncryption": true,
+        "enabledForTemplateDeployment": true
+      },
+      "dependsOn": []
+    }
+  ],
+  "outputs": {
+    "keyVaultName": {
+      "type": "string",
+      "value": "[variables('keyVaultName')]"
+    }
+  }
+}

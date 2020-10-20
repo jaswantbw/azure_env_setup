@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "2.0.0.0",
+  "parameters": {
+    "customerIdentifier": { "value": "nof1-srpt" },
+    "environment": { "value": "dev" },
+    "portalVmAdminPassword": { "value": "84ATAuU63WFqQ58D5Usb" },
+    "sqlElasticPoolName": { "value": "nof1-srpt-sql-pool" },
+    "sqlServerName": { "value": "nof1health-nof1-srpt-sql" },
+    "sqlServerAdminPassword": { "value": "cUPS2x9ztgFcwE0DQc70" },
+    "sqlServerActiveDirectoryAdmin": { "value": "Nof1 - Sarepta Database Administrators" }
+  }
+}

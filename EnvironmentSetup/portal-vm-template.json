@@ -1,0 +1,148 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },
+    "portalVirtualMachineAdminUsername": {
+      "type": "string"
+    },
+    "portalVirtualMachineAdminPassword": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "customerIdentifierShort": "[replace(parameters('customerIdentifier'), '-', '')]",
+
+    "networkInterfaceName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network-interface')]",
+    "networkSecurityGroupName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network-security-group')]",
+    "networkSecurityGroupId": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('networkSecurityGroupName'))]",
+    "virtualNetworkName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network')]",
+    "virtualNetworkId": "[resourceId(resourceGroup().name,'Microsoft.Network/virtualNetworks', variables('virtualNetworkName'))]",
+    "virtualNetworkSubnetName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'network-subnet')]",
+    "virtualNetworkSubnetId": "[concat(variables('virtualNetworkId'), '/subnets/', variables('virtualNetworkSubnetName'))]",
+    "publicIpAddressName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'portal-public-ip')]",
+
+    "domainName": "[concat(parameters('customerIdentifier'), '-', parameters('environment'))]",
+    "virtualMachineName": "[variables('domainName')]",
+    "virtualMachineSize": "Standard_DS1_v2",
+    "virtualMachineOsDiskType": "StandardSSD_LRS",
+    "storageAccountName": "[replace(concat(variables('customerIdentifierShort'), 'storage', parameters('environment')), '-', '')]"
+  },
+  "resources": [
+    {
+      "comments": "Public IP address for the Portal VM.",
+      "name": "[variables('publicIpAddressName')]",
+      "type": "Microsoft.Network/publicIpAddresses",
+      "apiVersion": "2018-08-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIpAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('domainName')]"
+        }
+      },
+      "sku": {
+        "name": "Basic"
+      },
+      "tags": {}
+    },
+    {
+      "comments": "Network Interface for the portal VM. Requires the virtual network to be created first.",
+      "name": "[variables('networkInterfaceName')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2018-04-01",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIpAddresses/', variables('publicIpAddressName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[variables('virtualNetworkSubnetId')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[variables('networkSecurityGroupId')]"
+        }
+      },
+      "tags": {}
+    },
+    {
+      "comments": "The Virtual Machine that hosts the portal. Requires the network interface to be created first.",
+      "name": "[variables('virtualMachineName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2018-04-01",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('networkInterfaceName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('virtualMachineSize')]"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "fromImage",
+            "managedDisk": {
+              "storageAccountType": "[variables('virtualMachineOsDiskType')]"
+            }
+          },
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('networkInterfaceName'))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[variables('domainName')]",
+          "adminUsername": "[parameters('portalVirtualMachineAdminUsername')]",
+          "adminPassword": "[parameters('portalVirtualMachineAdminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVmAgent": true
+          }
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[concat('https://', variables('storageAccountName'), '.blob.core.windows.net/')]"
+          }
+        }
+      },
+      "tags": {}
+    }
+  ]
+}

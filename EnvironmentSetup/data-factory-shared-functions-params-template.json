@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "value": "nof1-v220"
+    },
+    "environment": {
+      "value": "dev-v2"
+    },    
+    "functionAppUrl": {
+      "value": "https://nof1-sharedfunctions-dev.azurewebsites.net"
+    },
+	"functionName": {
+      "value": "graphapi/auditlogs/signins"
+    },
+    "Nof1SharedFunctions_LS_functionKey": {
+      "value": ""
+    },
+    "keyVaultBaseURL": {
+      "value": "https://nof1-v220-keyvault-dev.vault.azure.net/secrets/"
+    },
+    "certificateThumbprint": {
+      "value": ""
+    },
+    "applicationId": {
+      "value": "5d9875f7-b640-42fe-8db8-26c38fc14248"
+    },
+	"applicationName": {
+		"value": "220-dev"
+	},
+	"filterIntervalOffset": {
+		"value": "-1"
+	},
+	"filterIntervalType": {
+		"value": "0"
+	},
+	"notificationCategory": {
+		"value": "ERRORLOG.MONITOR"
+	}
+  }
+}

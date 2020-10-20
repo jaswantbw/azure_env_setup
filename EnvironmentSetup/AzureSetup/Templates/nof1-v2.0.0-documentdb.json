@@ -1,0 +1,68 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "2.0.0.0",
+    "parameters": {
+        "customerIdentifier": {
+            "type": "string",
+            "maxLength": 20,
+            "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+        },
+        "environment": {
+            "type": "string",
+            "maxLength": 5,
+            "metadata": { "description": "The name of the environment." }
+        },
+        "portalVmAdminPassword": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlElasticPoolName": {
+            "type": "string",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlServerAdminPassword": {
+            "type": "securestring",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlServerName": {
+            "type": "string",
+            "metadata": { "description": "Not used in this template. Added to keep the environment and shared parameters in sync so one parameters file can be used for both." }
+        },
+        "sqlServerActiveDirectoryAdmin": {
+            "type": "string",
+            "metadata": { "description": "Not used in ARM templates. Added so all parameters can be kept in the parameters file." }
+        }
+    },
+    "variables": {
+        "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+        "documentDbAccountName": "[concat('nof1health-', parameters('customerIdentifier'), '-document-account')]",
+        "documentDbDatabaseName": "[concat(parameters('customerIdentifier'), '-documents')]",
+        "documentDbLocation": "[replace(resourceGroup().location, 'eastus2', 'eastus')]"
+    },
+    "resources": [
+        {
+            "apiVersion": "2015-04-08",
+            "type": "Microsoft.DocumentDb/databaseAccounts",
+            "name": "[variables('documentDbAccountName')]",
+            "location": "[variables('documentDbLocation')]",
+            "properties": {
+                "name": "[variables('documentDbAccountName')]",
+                "databaseAccountOfferType": "Standard"
+            }
+        }
+    ],
+    "outputs": {
+        "customerIdentifier": {
+            "type": "string",
+            "value": "[parameters('customerIdentifier')]"
+        },
+        "documentDbAccountName": {
+            "type": "string",
+            "value": "[variables('documentDbAccountName')]"
+        },
+        "documentDbMasterKey": {
+            "type": "string",
+            "value": "[listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', variables('documentDbAccountName')), '2015-04-08').primaryMasterKey]"
+        }
+    }
+}

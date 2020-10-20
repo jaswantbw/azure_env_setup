@@ -1,0 +1,18 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "2.0.0.0",
+    "parameters": {
+        "customerIdentifier": { "value": "nof1-v210" },
+        "environment": { "value": "dev" },
+        "environmentNumber": { "value": 7 },
+        "portalVmAdminPassword": { "value": "myzYEg6vwr9bPMPMpV7q" },
+        "sqlElasticPoolName": { "value": "nof1-v210-dev-sql-pool" },
+        "sqlServerName": { "value": "nof1health-nof1-v210-sql" },
+        "sqlServerAdminPassword": { "value": "Obo6uSzMbW8WIFhLK1wf" },
+        "sqlServerActiveDirectoryAdmin": { "value": "Nof1 - Nof1 Services Database Administrators" },
+        "databasePasswordNof1": { "value": "+Fj4VDd^&Qd036Gm#Tjv" },
+        "databasePasswordDnn": { "value": "1\\iA7DNspZb5abps8.r7" },
+        "databasePasswordDatawarehouse": { "value": ";\\Ac;&96I|bhU5!sof/G" },
+        "databasePasswordLog": { "value": "cj!eUm^1Gt7RnCw|Sz%:" }
+    }
+}

@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|AnyCPU">
+      <Configuration>Debug</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|AnyCPU">
+      <Configuration>Release</Configuration>
+      <Platform>AnyCPU</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>50b7c334-1661-4a42-8bd9-2bd9490e5231</ProjectGuid>
+    <SccProjectName>SAK</SccProjectName>
+    <SccProvider>SAK</SccProvider>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccLocalPath>SAK</SccLocalPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFrameworkIdentifier>Deployment</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>1.0</TargetFrameworkVersion>
+    <PrepareForBuildDependsOn>
+    </PrepareForBuildDependsOn>
+  </PropertyGroup>
+  <Import Condition=" Exists('Deployment.targets') " Project="Deployment.targets" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+  <!-- vertag<:>start tokens<:>maj.min -->
+  <Import Condition=" Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets') " Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets" />
+  <!-- vertag<:>end -->
+  <ItemGroup>
+    <None Include="Deployment.targets">
+      <Visible>False</Visible>
+    </None>
+    <Content Include="Scripts\CreateSqlDbOwnerLogin.ps1" />
+    <Content Include="Scripts\Deploy-AzureResourceGroup.ps1" />
+    <None Include="Tools\nof1-v210-dev.pfx" />
+    <None Include="Tools\nof1-v220-dev.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="nof1-v220-dev.keyCredentials.json" />
+    <None Include="Scripts\Backup-VirtualMachine.ps1" />
+    <None Include="Scripts\Create-AzureNetworkForDigitalInfuzionDomain.ps1" />
+    <None Include="Scripts\CreateSqlDbOwnerLogin.sql" />
+    <None Include="Scripts\DataInitialization\AuthenticateUser.ps1" />
+    <None Include="Scripts\DataInitialization\CreateDefaultUsers.ps1" />
+    <None Include="Scripts\DataInitialization\DataInitialization.ps1" />
+    <None Include="Scripts\DataInitialization\DataInitializationDev.ps1" />
+    <None Include="Scripts\DataInitialization\DataInitializationQA.ps1" />
+    <None Include="Scripts\DataInitialization\GetOrganizations.ps1" />
+    <None Include="Scripts\DataInitialization\GetStudyProtocol.ps1" />
+    <None Include="Scripts\DataInitialization\GetStudySites.ps1" />
+    <None Include="Scripts\DataInitialization\RunReportDev.ps1" />
+    <None Include="Scripts\DataInitialization\RunReportQA.ps1" />
+    <None Include="Scripts\DataInitialization\SetSystemUser.ps1" />
+    <None Include="Scripts\DataInitialization\UploadReport.ps1" />
+    <None Include="Scripts\DataInitialization\UpsertOrganization.ps1" />
+    <None Include="Scripts\DataInitialization\UpsertStudySite.ps1" />
+    <None Include="Scripts\New-SelfSignedCertificateEx.ps1" />
+    <None Include="Scripts\nof1-configuration-table-setup.ps1" />
+    <None Include="Scripts\DataWarehouseRefresh\RefreshDEV.ps1" />
+    <None Include="Scripts\DataWarehouseRefresh\RefreshQA.ps1" />
+    <None Include="Scripts\nof1-key-vault-setup.ps1" />
+    <None Include="Scripts\nof1-v220-dev.keyCredentials.json" />
+    <None Include="Scripts\Restore-Deleted-DataBase.ps1" />
+    <None Include="Scripts\Restore-VirtualMachine.ps1" />
+    <None Include="Scripts\upload-blobs.ps1" />
+    <None Include="Templates\customer-backup-params.json" />
+    <None Include="Templates\nof1-deployment-test-params.json" />
+    <None Include="Templates\nof1-epro-demo-params.json" />
+    <None Include="Templates\nof1-edc-demo-params.json" />
+    <None Include="Templates\nof1-srpt-dev-params.json" />
+    <None Include="Templates\nof1-v1.8.0-dev-params.json" />
+    <None Include="Templates\nof1-v2.0.0-qa-params.json" />
+    <None Include="Templates\nof1-v2.0.0-shared.json" />
+    <None Include="Templates\nof1-v2.0.0-dev-params.json" />
+    <None Include="Templates\nof1-v2.0.0-environment.json" />
+    <None Include="Templates\nof1-v2.0.0-documentdb.json" />
+    <None Include="Templates\nof1-v2.2.0-dev-params.json" />
+    <None Include="Templates\nof1-v2.2.0-environment.json" />
+    <None Include="Templates\nof1-v2.2.0-shared.json" />
+    <None Include="Tools\AzCopy.exe" />
+    <None Include="Tools\DNN_Platform_07.04.02_Install.zip" />
+    <None Include="Tools\Microsoft.Data.Edm.dll">
+      <Visible>False</Visible>
+    </None>
+    <None Include="Tools\Microsoft.Data.OData.dll">
+      <Visible>False</Visible>
+    </None>
+    <None Include="Tools\Microsoft.Data.Services.Client.dll">
+      <Visible>False</Visible>
+    </None>
+    <None Include="Tools\Microsoft.WindowsAzure.Storage.dll">
+      <Visible>False</Visible>
+    </None>
+    <None Include="Tools\Microsoft.WindowsAzure.Storage.DataMovement.dll">
+      <Visible>False</Visible>
+    </None>
+  </ItemGroup>
+  <Target Name="GetReferenceAssemblyPaths" />
+</Project>

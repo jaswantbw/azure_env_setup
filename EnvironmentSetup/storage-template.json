@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "customerEnvironmentShort": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "customerIdentifierShort": "[replace(parameters('customerIdentifier'), '-', '')]",
+    "storageAccountName": "[replace(concat(variables('customerIdentifierShort'), 'storage', parameters('environment')), '-', '')]"
+  },
+  "resources": [
+    {
+      "comments": "Primary storage account",
+      "type": "Microsoft.Storage/storageAccounts",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "name": "[variables('storageAccountName')]",
+      "apiVersion": "2018-02-01",
+      "location": "eastus2",
+      "tags": {},
+      "scale": null,
+      "properties": {
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": false,
+        "encryption": {
+          "services": {
+            "file": {
+              "enabled": true
+            },
+            "blob": {
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        }
+      },
+      "dependsOn": []
+    }
+  ],
+  "outputs": {
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    },
+    "storageAccountKey": {
+      "type": "string",
+      "value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), providers('Microsoft.Storage', 'storageAccounts').apiVersions[0]).keys[0].value]"
+    }
+  }
+}

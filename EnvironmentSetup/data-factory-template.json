@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },
+    "sqlAdministratorUsername": {
+      "type": "string",
+      "maxLength": 20,
+      "metadata": { "description": "The username for the database server administrator." }
+    },
+    "sqlAdministratorPassword": {
+      "type": "securestring",
+      "metadata": { "description": "The password for the database server administrator." }
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "dataFactoryName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'datafactory')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-01-01-preview",
+      "name": "[variables('dataFactoryName')]",
+      "location": "[parameters('location')]",
+      "type": "Microsoft.DataFactory/dataFactories",
+      "properties": {}
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "2.0.0.0",
+    "parameters": {
+        "customerIdentifier": { "value": "nof1-v180" },
+        "environment": { "value": "dev" },
+        "portalVmAdminPassword": { "value": "Tp8pN6zXyXkFQRfgihDA" },
+        "sqlServerAdminPassword": { "value": "VWnfk5faSXSs89fPuGng" }
+    }
+}

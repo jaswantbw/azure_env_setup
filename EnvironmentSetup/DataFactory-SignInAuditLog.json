@@ -1,0 +1,216 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },    
+    "functionAppUrl": {
+      "type": "string",
+      "maxLength": 200,
+      "metadata": { "description": "Shared Function Base URL" }
+    },
+	"functionName": {
+      "type": "string",
+      "maxLength": 200,
+      "metadata": { "description": "Shared Function Name" }
+    },
+    "Nof1SharedFunctions_LS_functionKey": {
+      "type": "secureString",
+      "metadata": "Secure string for 'functionKey' of 'Nof1SharedFunctions_LS_functionKey'"
+    },
+    "keyVaultBaseURL": {
+      "type": "string",
+      "maxLength": 100,
+      "metadata": { "description": "The VaultName of the environment." }
+    },
+    "certificateThumbprint": {
+      "type": "string",      
+      "metadata": { "description": "Enter the CertificateThumbprint" }
+    },
+    "applicationId": {
+      "type": "string",
+      "maxLength": 100,
+      "metadata": { "description": "Enter the ClientId" }
+    }
+	,
+    "applicationName": {
+      "type": "string",
+      "maxLength": 75,
+      "metadata": { "description": "Enter the Application Name" }
+    },
+    "filterIntervalOffset": {
+      "type": "string",
+      "maxLength": 75,
+      "metadata": { "description": "Enter the Filter Interval Offset" }
+    },
+    "filterIntervalType": {
+      "type": "string",
+      "maxLength": 75,
+      "metadata": { "description": "Enter the Filter Interval Type" }
+    },
+    "notificationCategory": {
+      "type": "string",
+      "maxLength": 75,
+      "metadata": { "description": "Enter the Notification Category" }
+    }
+	
+  },
+    "variables": {
+		"customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+        "datafactoryName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'datafactory')]",
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', variables('datafactoryName'))]",
+		"signInAuditPipleline" : "SignIn_Audit_Pipeline"
+		
+    },
+	"resources":[  
+        {  
+            "name":"[variables('datafactoryName')]",
+            "apiVersion":"2018-06-01",
+            "type":"Microsoft.DataFactory/factories",
+            "location":"[parameters('location')]",
+            "identity":{  
+                "type":"SystemAssigned"
+            },
+    "resources": [                      
+        {
+            "name": "[concat(variables('datafactoryName'), '/Nof1SharedFunctions_LS')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureFunction",
+                "typeProperties": {
+                    "functionAppUrl": "[parameters('functionAppUrl')]",
+                    "functionKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('Nof1SharedFunctions_LS_functionKey')]"
+                    }
+                }
+            },
+            "dependsOn": [
+			"[variables('dataFactoryName')]"
+			]
+        },
+        
+        
+        {
+            "name": "[concat(variables('datafactoryName'), '/' , variables('signInAuditPipleline'))]" ,
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "AF_ExecuteSignInAuditLog",
+                        "type": "AzureFunctionActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "functionName": "[parameters('functionName')]",
+                            "method": "POST",
+                            "headers": {},
+                            "body": {
+                                "KeyVaultBaseURL": "@pipeline().parameters.KeyVaultBaseURL",
+								"CertificateThumbPrint": "@pipeline().parameters.CertificateThumbPrint",
+								"ApplicationId": "@pipeline().parameters.ApplicationId",
+								"ApplicationName":"@pipeline().parameters.ApplicationName",
+								"FilterIntervalOffset":"@pipeline().parameters.FilterIntervalOffset",
+								"FilterIntervalType":"@pipeline().parameters.FilterIntervalType"
+                            }
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "Nof1SharedFunctions_LS",
+                            "type": "LinkedServiceReference"
+                        }
+                    }				
+                ],
+				 "concurrency": 1,
+                "parameters": {
+                    "KeyVaultBaseURL": {
+                        "type": "string",
+                        "defaultValue": "[parameters('keyVaultBaseURL')]"
+                    },
+                    "ApplicationId": {
+                        "type": "string",
+                        "defaultValue": "[parameters('applicationId')]"
+                    },
+                    "CertificateThumbprint": {
+                        "type": "string",
+                        "defaultValue": "[parameters('certificateThumbprint')]"
+                    },
+					"ApplicationName": {
+                        "type": "string",
+                        "defaultValue": "[parameters('applicationName')]"
+                    },
+                    "FilterIntervalOffset": {
+                        "type": "string",
+                        "defaultValue": "[parameters('filterIntervalOffset')]"
+                    },
+                    "FilterIntervalType": {
+                        "type": "string",
+                        "defaultValue": "[parameters('filterIntervalType')]"
+                    }                    
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+				"[variables('dataFactoryName')]",
+                "[concat(variables('factoryId'), '/linkedServices/Nof1SharedFunctions_LS')]"
+            ]
+        },
+		{
+            "name": "[concat(variables('datafactoryName'), '/', 'SignInAuditTimer')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Started",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "[variables('signInAuditPipleline')]",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Hour",
+                        "interval": 1,
+                        "startTime": "2020-02-18T11:52:00.000Z",
+                        "timeZone": "UTC"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[variables('dataFactoryName')]",
+				"[concat(variables('factoryId'), concat('/pipelines/', variables('signInAuditPipleline')))]"
+            ]
+        }
+    ]
+
+	}
+	]
+}

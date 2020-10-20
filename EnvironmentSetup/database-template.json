@@ -1,0 +1,162 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },
+    "sqlAdministratorUsername": {
+      "type": "string",
+      "maxLength": 20,
+      "metadata": { "description": "The username for the database server administrator." }
+    },
+    "sqlAdministratorPassword": {
+      "type": "securestring",
+      "metadata": { "description": "The password for the database server administrator." }
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "sqlServerName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'sql')]",
+    "elasticPoolName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'sql-pool')]",
+    "sqlDatabaseNameNof1": "[replace(variables('customerEnvironment'), '{TOKEN}', 'nof1')]",
+    "sqlDatabaseNameNof1_TestMode": "[replace(variables('customerEnvironment'), '{TOKEN}', 'nof1_test')]",
+    "sqlDatabaseNameDnn": "[replace(variables('customerEnvironment'), '{TOKEN}', 'dnn')]",
+    "sqlDatabaseNameDataWarehouse": "[replace(variables('customerEnvironment'), '{TOKEN}', 'dw')]",
+    "sqlDatabaseNameDataWarehouse_TestMode": "[replace(variables('customerEnvironment'), '{TOKEN}', 'dw_test')]"
+  },
+  "resources": [
+    {
+      "comments": "SQL Server",
+      "type": "Microsoft.Sql/servers",
+      "kind": "v12.0",
+      "name": "[variables('sqlServerName')]",
+      "apiVersion": "2015-05-01-preview",
+      "location": "[parameters('location')]",
+      "scale": null,
+      "properties": {
+        "administratorLogin": "[parameters('sqlAdministratorUsername')]",
+        "administratorLoginPassword": "[parameters('sqlAdministratorPassword')]",
+        "version": "12.0"
+      },
+      "resources": [
+        {
+          "comments": "SQL Elastic Pool",
+          "type": "Microsoft.Sql/servers/elasticPools",
+          "kind": "pool",
+          "name": "[concat(variables('sqlServerName'), '/', variables('elasticPoolName'))]",
+          "apiVersion": "2014-04-01",
+          "location": "[parameters('location')]",
+          "scale": null,
+          "properties": {
+            "edition": "Standard",
+            "dtu": 50,
+            "storageMB": 51200,
+            "zoneRedundant": false
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+          ]
+        },
+        {
+          "comments": "N of 1 SQL Database",
+          "type": "databases",
+          "name": "[variables('sqlDatabaseNameNof1')]",
+          "location": "[parameters('location')]",
+          "apiVersion": "2014-04-01",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'))]",
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'), '/elasticPools/', variables('elasticPoolName'))]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "serviceLevelObjective": "ElasticPool",
+            "elasticPoolName": "[variables('elasticPoolName')]"
+          }
+        },
+        {
+          "comments": "Data Warehouse SQL Database",
+          "name": "[variables('sqlDatabaseNameDataWarehouse')]",
+          "type": "databases",
+          "location": "[parameters('location')]",
+          "apiVersion": "2014-04-01",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'))]",
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'), '/elasticPools/', variables('elasticPoolName'))]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "serviceLevelObjective": "ElasticPool",
+            "elasticPoolName": "[variables('elasticPoolName')]"
+          }
+        },
+        {
+          "comments": "N of 1 SQL Database Test Mode",
+          "name": "[variables('sqlDatabaseNameNof1_TestMode')]",
+          "type": "databases",
+          "location": "[parameters('location')]",
+          "apiVersion": "2014-04-01",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'))]",
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'), '/elasticPools/', variables('elasticPoolName'))]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "serviceLevelObjective": "ElasticPool",
+            "elasticPoolName": "[variables('elasticPoolName')]"
+          },
+          "tags": {
+            "test-mode": "test-mode"
+          }
+        },
+        {
+          "comments": "Data Warehouse SQL Database Test Mode",
+          "name": "[variables('sqlDatabaseNameDataWarehouse_TestMode')]",
+          "type": "databases",
+          "location": "[parameters('location')]",
+          "apiVersion": "2014-04-01",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'))]",
+            "[concat('Microsoft.Sql/servers/', variables('sqlServerName'), '/elasticPools/', variables('elasticPoolName'))]"
+          ],
+          "properties": {
+            "edition": "Standard",
+            "serviceLevelObjective": "ElasticPool",
+            "elasticPoolName": "[variables('elasticPoolName')]"
+          },
+          "tags": {
+            "test-mode": "test-mode"
+          }
+        }
+      ],
+      "dependsOn": []
+    },
+    {
+      "comments": "Firewall rule to allow Azure IP addresses",
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "name": "[concat(variables('sqlServerName'), '/AllowAllWindowsAzureIps')]",
+      "apiVersion": "2015-05-01-preview",
+      "scale": null,
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('sqlServerName'))]"
+      ]
+    }
+  ]
+}

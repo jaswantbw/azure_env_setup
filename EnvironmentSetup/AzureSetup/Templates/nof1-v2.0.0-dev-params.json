@@ -1,0 +1,13 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "2.0.0.0",
+    "parameters": {
+        "customerIdentifier": { "value": "nof1-v200" },
+        "environment": { "value": "dev" },
+        "portalVmAdminPassword": { "value": "iFP1S26Q9UdoKT1dGSGH" },
+        "sqlElasticPoolName": { "value": "nof1-v200-sql-pool" },
+        "sqlServerName": { "value": "nof1health-nof1-v200-sql" },
+        "sqlServerAdminPassword": { "value": "SEZ61e19T8yhTCdZdsbs" },
+        "sqlServerActiveDirectoryAdmin": { "value": "Nof1 - Nof1 Services Database Administrators" }
+    }
+}

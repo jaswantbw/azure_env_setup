@@ -1,0 +1,144 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 4,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },
+    "selfSignedCertificateBase64String": {
+      "type": "string"
+    },
+    "selfSignedCertificatePassword": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+    "backgroundAppServicePlanName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'appserviceplan-bkgrnd')]",
+    "backgroundSiteName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'bkgrnd')]",
+    "certificateName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'certificate')]"
+  },
+  "resources": [
+    {
+      "comments": "App Service Plan containing the Background Apps",
+      "type": "Microsoft.Web/serverfarms",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic",
+        "size": "B1",
+        "family": "B",
+        "capacity": 1
+      },
+      "kind": "app",
+      "name": "[variables('backgroundAppServicePlanName')]",
+      "apiVersion": "2016-09-01",
+      "location": "[parameters('location')]",
+      "scale": null,
+      "properties": {
+        "name": "[variables('backgroundAppServicePlanName')]",
+        "perSiteScaling": false,
+        "reserved": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0
+      },
+      "dependsOn": []
+    },
+    {
+      "comments": "A certificate that allows the application to authenticate to the KeyVault",
+      "type": "Microsoft.Web/certificates",
+      "name": "[variables('certificateName')]",
+      "apiVersion": "2016-03-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "pfxBlob": "[parameters('selfSignedCertificateBase64String')]",
+        "password": "[parameters('selfSignedCertificatePassword')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('backgroundAppServicePlanName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('backgroundAppServicePlanName'))]"
+      ]
+    },
+    {
+      "comments": "Web Site containing the Background Apps",
+      "type": "Microsoft.Web/sites",
+      "kind": "api",
+      "name": "[variables('backgroundSiteName')]",
+      "apiVersion": "2016-08-01",
+      "location": "[parameters('location')]",
+      "scale": null,
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('backgroundSiteName'),'.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('backgroundSiteName'),'.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('backgroundAppServicePlanName'))]",
+        "reserved": false,
+        "clientAffinityEnabled": false,
+        "clientCertEnabled": false,
+        "hostNamesDisabled": false
+      },
+      "resources": [
+        {
+          "name": "appsettings",
+          "type": "config",
+          "apiVersion": "2015-08-01",
+          "dependsOn": [
+            "[concat('Microsoft.Web/sites/', variables('backgroundSiteName'))]"
+          ],
+          "properties": {
+            "WEBSITE_LOAD_CERTIFICATES": "*"
+          }
+        }
+      ],
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('backgroundAppServicePlanName'))]"
+      ]
+    },
+    {
+      "comments": "Background Application Configuration. Only the necessary `properties` are specified.",
+      "type": "Microsoft.Web/sites/config",
+      "name": "[concat(variables('backgroundSiteName'), '/web')]",
+      "apiVersion": "2016-08-01",
+      "location": "East US 2",
+      "scale": null,
+      "properties": {
+        "numberOfWorkers": 1,
+        "phpVersion": "",
+        "use32BitWorkerProcess": false,
+        "webSocketsEnabled": true,
+        "alwaysOn": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('backgroundSiteName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "backgroundSiteName": {
+      "type": "string",
+      "value": "[variables('backgroundSiteName')]"
+    }
+  }
+}

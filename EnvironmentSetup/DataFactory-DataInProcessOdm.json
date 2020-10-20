@@ -1,0 +1,223 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+  "parameters": {
+    "customerIdentifier": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The identifier of the customer. Prefix for most resources." }
+    },
+    "environment": {
+      "type": "string",
+      "maxLength": 10,
+      "metadata": { "description": "The name of the environment." }
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 20,
+      "defaultValue": "eastus2",
+      "metadata": { "description": "The location where the resources will be deployed." }
+    },
+    "studyAcronym": {
+      "type": "string",
+      "maxLength": 20,
+      "metadata": { "description": "The StudyAcronym of the study." }
+    },
+    "studyName": {
+      "type": "string",
+      "maxLength": 50,
+      "metadata": { "description": "The name of the study." }
+    },
+    "studyProtocolOid": {
+      "type": "string",
+      "maxLength": 50,
+      "metadata": { "description": "The StudyProtocolOid of the study." }
+    },
+    "functionAppUrl": {
+      "type": "string",
+      "maxLength": 200,
+      "metadata": { "description": "DataIn Shared Function Base URL" }
+    },
+	"functionName": {
+      "type": "string",
+      "maxLength": 200,
+      "metadata": { "description": "DataIn Shared Function Name" }
+    },
+    "Nof1FunctionsDFV2_LS_functionKey": {
+      "type": "secureString",
+      "metadata": "Secure string for 'functionKey' of 'Nof1FunctionsDFV2_LS_functionKey'"
+    },
+    "vaultName": {
+      "type": "string",
+      "maxLength": 50,
+      "metadata": { "description": "The VaultName of the environment." }
+    },
+    "certificateThumbprint": {
+      "type": "string",     
+      "metadata": { "description": "Enter the CertificateThumbprint" }
+    },
+    "clientId": {
+      "type": "string",
+      "maxLength": 75,
+      "metadata": { "description": "Enter the ClientId" }
+    }
+  },
+    "variables": {
+		"customerEnvironment": "[concat(parameters('customerIdentifier'), '-{TOKEN}-', parameters('environment'))]",
+        "datafactoryName": "[replace(variables('customerEnvironment'), '{TOKEN}', 'datafactory')]",
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', variables('datafactoryName'))]"		
+		
+    },
+	"resources":[  
+        {  
+            "name":"[variables('datafactoryName')]",
+            "apiVersion":"2018-06-01",
+            "type":"Microsoft.DataFactory/factories",
+            "location":"[parameters('location')]",
+            "identity":{  
+                "type":"SystemAssigned"
+            },
+    "resources": [                      
+        {
+            "name": "[concat(variables('datafactoryName'), '/Nof1FunctionsDFV2_LS')]",
+            "type": "Microsoft.DataFactory/factories/linkedServices",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "type": "AzureFunction",
+                "typeProperties": {
+                    "functionAppUrl": "[parameters('functionAppUrl')]",
+                    "functionKey": {
+                        "type": "SecureString",
+                        "value": "[parameters('Nof1FunctionsDFV2_LS_functionKey')]"
+                    }
+                }
+            },
+            "dependsOn": [
+			"[variables('dataFactoryName')]"
+			]
+        },                
+        {			
+            "name": "[concat(variables('datafactoryName'), '/ProcessOdmTransaction')]",
+            "type": "Microsoft.DataFactory/factories/pipelines",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "activities": [
+                    {
+                        "name": "AF_ProcessOdmTransactionFunction",
+                        "type": "AzureFunctionActivity",
+                        "dependsOn": [],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "functionName": "[parameters('functionName')]",
+                            "method": "POST",
+                            "headers": {},
+                            "body": {
+                                "VaultName": "@pipeline().parameters.VaultName",
+                                "CertificateThumbprint": "@pipeline().parameters.CertificateThumbprint",
+                                "ClientId": "@pipeline().parameters.ClientId",
+                                "DataInType":"@pipeline().parameters.DataInType"								
+                            }
+                        },
+                        "linkedServiceName": {
+                            "referenceName": "Nof1FunctionsDFV2_LS",
+                            "type": "LinkedServiceReference"
+                        }
+                    },
+                    {
+                        "name": "ProcessOdm_Get_Complete_Status",
+                        "type": "WebActivity",
+                        "dependsOn": [
+                            {
+                                "activity": "AF_ProcessOdmTransactionFunction",
+                                "dependencyConditions": [
+                                    "Succeeded"
+                                ]
+                            }
+                        ],
+                        "policy": {
+                            "timeout": "7.00:00:00",
+                            "retry": 0,
+                            "retryIntervalInSeconds": 30,
+                            "secureOutput": false,
+                            "secureInput": false
+                        },
+                        "userProperties": [],
+                        "typeProperties": {
+                            "url": {
+                                "value": "@activity('AF_ProcessOdmTransactionFunction').output.statusQueryGetUri",
+                                "type": "Expression"
+                            },
+                            "method": "GET",
+                            "headers": {}
+                        }
+                    }					
+                ],
+                "parameters": {
+                    "VaultName": {
+                        "type": "string",
+                        "defaultValue": "[parameters('vaultName')]"
+                    },
+                    "ClientId": {
+                        "type": "string",
+                        "defaultValue": "[parameters('clientId')]"
+                    },
+                    "CertificateThumbprint": {
+                        "type": "string",
+                        "defaultValue": "[parameters('certificateThumbprint')]"
+                    },
+                    "DataInType": {
+                        "type": "string",
+                        "defaultValue": "processOdm"
+                    }					
+                    
+                },
+                "annotations": []
+            },
+            "dependsOn": [
+				"[variables('dataFactoryName')]",
+                "[concat(variables('factoryId'), '/linkedServices/Nof1FunctionsDFV2_LS')]"
+            ]
+        },
+		{
+            "name": "[concat(variables('datafactoryName'), '/ProcessOdmTrigger')]",
+            "type": "Microsoft.DataFactory/factories/triggers",
+            "apiVersion": "2018-06-01",
+            "properties": {
+                "annotations": [],
+                "runtimeState": "Started",
+                "pipelines": [
+                    {
+                        "pipelineReference": {
+                            "referenceName": "ProcessOdmTransaction",
+                            "type": "PipelineReference"
+                        },
+                        "parameters": {}
+                    }
+                ],
+                "type": "ScheduleTrigger",
+                "typeProperties": {
+                    "recurrence": {
+                        "frequency": "Minute",
+                        "interval": 5,
+                        "startTime": "2020-02-18T11:52:00.000Z",
+                        "timeZone": "UTC"
+                    }
+                }
+            },
+            "dependsOn": [
+                "[variables('dataFactoryName')]",
+				"[concat(variables('factoryId'), '/pipelines/ProcessOdmTransaction')]"
+            ]
+        }
+    ]
+	}
+	]
+}

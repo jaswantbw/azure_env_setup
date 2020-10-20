@@ -1,0 +1,3 @@
+pushd ~
+mkdir {customerIdentifier}-{environment}
+chmod -R 755 {customerIdentifier}-{environment}
